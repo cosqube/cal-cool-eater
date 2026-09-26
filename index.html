@@ -314,6 +314,42 @@ let waitingForNumber = false;
 let dodging = false;
 let paywallOpened = false;
 let swapCooldown = false;
+let lastSoundFile = "";
+const paywallSounds = [
+  "applepay.mp3"
+];
+const switchSounds = [
+  "boom.mp3",
+  "bruh.mp3",
+  "gun.mp3",
+  "mario.mp3",
+  "oof.mp3",
+  "punch.mp3",
+  "quack.mp3",
+  "slap.mp3"
+];
+const soundPlayers = new Map(
+  [...paywallSounds, ...switchSounds].map(soundFile => {
+    const audio = new Audio(soundFile);
+    audio.preload = "auto";
+    return [soundFile, audio];
+  })
+);
+let currentSound = null;
+
+function playRandomSound(soundFiles) {
+  const availableSounds = soundFiles.filter(soundFile => soundFile !== lastSoundFile);
+  const soundPool = availableSounds.length ? availableSounds : soundFiles;
+  const soundFile = soundPool[Math.floor(Math.random() * soundPool.length)];
+  lastSoundFile = soundFile;
+  if (currentSound) {
+    currentSound.pause();
+    currentSound.currentTime = 0;
+  }
+  currentSound = soundPlayers.get(soundFile);
+  currentSound.currentTime = 0;
+  currentSound.play().catch(() => {});
+}
 
 function updateDisplay() {
   resultEl.textContent = currentNumber;
@@ -370,6 +406,7 @@ function showPaywall() {
 
   paywallOpened = true;
   overlay.classList.add("visible");
+  playRandomSound(paywallSounds);
 }
 
 function getCalculatorItems() {
@@ -400,6 +437,7 @@ function swapEquals() {
   placeholder.remove();
 
   equalsButton.classList.add("swapping");
+  playRandomSound(switchSounds);
   setTimeout(() => {
     equalsButton.classList.remove("swapping");
     swapCooldown = false;
