@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculator</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Schoolbell&display=swap');
+
+:root {
+  --paper: #fff8df;
+  --ink: #252525;
+  --red: #ef6258;
+  --blue: #5c9edb;
+  --yellow: #f6c94b;
+  --pink: #e991b2;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; min-height: 100%; }
+
+body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 14px;
+  overflow: hidden;
+  color: var(--ink);
+  font-family: "Patrick Hand", "Comic Sans MS", cursive;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(239,98,88,.1), transparent 20%),
+    radial-gradient(circle at 80% 25%, rgba(92,158,219,.1), transparent 22%),
+    radial-gradient(circle at 30% 85%, rgba(246,201,75,.12), transparent 20%),
+    var(--paper);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: .42;
+  background-image:
+    repeating-linear-gradient(0deg, transparent 0, transparent 4px, rgba(60,40,20,.018) 5px),
+    repeating-linear-gradient(90deg, transparent 0, transparent 7px, rgba(60,40,20,.014) 8px);
+}
+
+.calculator {
+  position: relative;
+  width: min(430px, 100%);
+  padding: 25px 22px 23px;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 8px 12px 9px 13px;
+  box-shadow: 7px 8px 0 var(--ink), 11px 13px 0 rgba(239,98,88,.18);
+  transform: rotate(-.7deg);
+}
+
+.calculator::before {
+  content: "";
+  position: absolute;
+  inset: -5px -4px -3px -5px;
+  border: 2px solid var(--ink);
+  border-radius: 11px 7px 13px 9px;
+  transform: rotate(.7deg);
+  pointer-events: none;
+  opacity: .45;
+}
+
+.display {
+  position: relative;
+  min-height: 92px;
+  margin-bottom: 19px;
+  padding: 12px 15px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-end;
+  overflow: hidden;
+  background: #fffdf1;
+  border: 3px solid var(--ink);
+  border-radius: 6px 10px 7px 5px;
+  box-shadow: inset 2px 3px 0 rgba(0,0,0,.06), 3px 4px 0 rgba(0,0,0,.15);
+}
+
+.display::after {
+  content: "";
+  position: absolute;
+  width: 80px;
+  height: 5px;
+  left: 13px;
+  top: 14px;
+  background: var(--yellow);
+  transform: rotate(-2deg);
+  opacity: .6;
+}
+
+.expression {
+  width: 100%;
+  min-height: 22px;
+  color: #777063;
+  font-size: 16px;
+  text-align: right;
+  word-break: break-all;
+}
+
+.result {
+  max-width: 100%;
+  font-family: "Schoolbell", cursive;
+  font-size: clamp(38px, 10vw, 48px);
+  line-height: 1;
+  word-break: break-all;
+}
+
+.keys {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 11px;
+}
+
+.key {
+  position: relative;
+  min-width: 0;
+  height: 62px;
+  overflow: hidden;
+  border: 3px solid var(--ink);
+  border-radius: 7px 9px 6px 10px;
+  color: var(--ink);
+  font-family: "Patrick Hand", cursive;
+  font-size: 25px;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+  box-shadow: 3px 4px 0 var(--ink);
+  transition: transform .08s ease, box-shadow .08s ease;
+}
+
+.key::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .12;
+  background: repeating-linear-gradient(12deg, transparent 0, transparent 4px, rgba(255,255,255,.55) 5px, transparent 7px);
+}
+
+.key:hover { transform: translate(-1px, -2px) rotate(-1deg); box-shadow: 4px 6px 0 var(--ink); }
+.key:active { transform: translate(2px, 3px) rotate(1deg); box-shadow: 1px 1px 0 var(--ink); }
+.key.number { background: #fffdf1; }
+.key.function { background: var(--blue); }
+.key.operator { background: var(--yellow); }
+.key.danger { background: var(--red); }
+.key.zero { grid-column: span 2; }
+
+.equals-slot { position: static; height: 62px; overflow: visible; }
+
+#equalsButton {
+  position: relative;
+  width: 100%;
+  height: 62px;
+  z-index: 2;
+  background: var(--red);
+}
+
+#equalsButton.runaway {
+  position: relative;
+  width: 100%;
+  height: 62px;
+}
+
+#equalsButton.swapping {
+  transform: rotate(8deg) scale(1.08);
+}
+
+#equalsButton {
+  transition: transform .12s ease;
+}
+
+button:focus-visible { outline: 4px dashed var(--blue); outline-offset: 4px; }
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(41,35,24,.38);
+  backdrop-filter: blur(2px);
+}
+
+.overlay.visible { display: flex; }
+
+.paywall {
+  width: min(360px, 100%);
+  padding: 26px 22px 22px;
+  text-align: center;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 8px 12px 9px 13px;
+  box-shadow: 7px 8px 0 var(--ink);
+  transform: rotate(1deg);
+}
+
+.paywall h2 {
+  margin: 0 0 8px;
+  color: var(--red);
+  font-family: "Schoolbell", cursive;
+  font-size: 34px;
+}
+
+.paywall p {
+  margin: 0 0 18px;
+  color: #62594c;
+  font-size: 18px;
+}
+
+.price {
+  display: inline-block;
+  margin-bottom: 18px;
+  padding: 5px 18px;
+  background: var(--yellow);
+  border: 3px solid var(--ink);
+  border-radius: 6px 9px 5px 8px;
+  box-shadow: 3px 4px 0 var(--ink);
+  font-family: "Schoolbell", cursive;
+  font-size: 34px;
+}
+
+.pay-button,
+.later-button {
+  width: 100%;
+  min-height: 50px;
+  border: 3px solid var(--ink);
+  border-radius: 7px 9px 6px 10px;
+  box-shadow: 3px 4px 0 var(--ink);
+  color: var(--ink);
+  cursor: pointer;
+  font-family: "Patrick Hand", cursive;
+  font-size: 21px;
+  font-weight: 700;
+}
+
+.pay-button { margin-bottom: 12px; background: #78b978; }
+.later-button { background: #fffdf1; }
+.pay-button:hover, .later-button:hover { transform: translate(-1px, -2px); }
+
+@media (max-width: 520px) {
+  .calculator { padding: 20px 17px 18px; }
+  .key, .equals-slot, #equalsButton { height: 58px; }
+  #equalsButton.runaway { height: 58px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+</style>
+</head>
+<body>
+<section class="calculator" aria-label="Calculator">
+  <div class="display">
+    <div class="expression" id="expression"></div>
+    <div class="result" id="result">0</div>
+  </div>
+  <div class="keys">
+    <button class="key function" type="button" data-action="clear">AC</button>
+    <button class="key function" type="button" data-action="sign">+/−</button>
+    <button class="key function" type="button" data-action="percent">%</button>
+    <button class="key operator" type="button" data-op="/">÷</button>
+    <button class="key number" type="button" data-number="7">7</button>
+    <button class="key number" type="button" data-number="8">8</button>
+    <button class="key number" type="button" data-number="9">9</button>
+    <button class="key operator" type="button" data-op="*">×</button>
+    <button class="key number" type="button" data-number="4">4</button>
+    <button class="key number" type="button" data-number="5">5</button>
+    <button class="key number" type="button" data-number="6">6</button>
+    <button class="key operator" type="button" data-op="-">−</button>
+    <button class="key number" type="button" data-number="1">1</button>
+    <button class="key number" type="button" data-number="2">2</button>
+    <button class="key number" type="button" data-number="3">3</button>
+    <button class="key operator" type="button" data-op="+">+</button>
+    <button class="key number zero" type="button" data-number="0">0</button>
+    <button class="key number" type="button" data-action="decimal">.</button>
+    <div class="equals-slot">
+      <button id="equalsButton" class="key danger" type="button" aria-label="Equals">=</button>
+    </div>
+  </div>
+</section>
+
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="payTitle">
+  <div class="paywall">
+    <h2 id="payTitle">Answer locked</h2>
+    <p>Pay to reveal the result.</p>
+    <div class="price">₹500</div>
+    <button class="pay-button" id="payButton" type="button">Pay ₹500 and show answer</button>
+    <button class="later-button" id="laterButton" type="button">Maybe later</button>
+  </div>
+</div>
+<script>
+const expressionEl = document.getElementById("expression");
+const resultEl = document.getElementById("result");
+const calculator = document.querySelector(".calculator");
+const equalsButton = document.getElementById("equalsButton");
+const overlay = document.getElementById("overlay");
+const payButton = document.getElementById("payButton");
+const laterButton = document.getElementById("laterButton");
+const keys = document.querySelector(".keys");
+let currentNumber = "0";
+let expression = "";
+let waitingForNumber = false;
+let dodging = false;
+let paywallOpened = false;
+let swapCooldown = false;
+let lastSoundFile = "";
+const paywallSounds = [
+  "applepay.mp3"
+];
+const switchSounds = [
+  "boom.mp3",
+  "bruh.mp3",
+  "gun.mp3",
+  "mario.mp3",
+  "oof.mp3",
+  "punch.mp3",
+  "quack.mp3",
+  "slap.mp3"
+];
+const soundFolder = "sounds/";
+const soundPlayers = new Map(
+  [...paywallSounds, ...switchSounds].map(soundFile => {
+    const audio = new Audio(`${soundFolder}${soundFile}`);
+    audio.preload = "auto";
+    return [soundFile, audio];
+  })
+);
+let currentSound = null;
+
+function playRandomSound(soundFiles) {
+  const availableSounds = soundFiles.filter(soundFile => soundFile !== lastSoundFile);
+  const soundPool = availableSounds.length ? availableSounds : soundFiles;
+  const soundFile = soundPool[Math.floor(Math.random() * soundPool.length)];
+  lastSoundFile = soundFile;
+  if (currentSound) {
+    currentSound.pause();
+    currentSound.currentTime = 0;
+  }
+  currentSound = soundPlayers.get(soundFile);
+  currentSound.currentTime = 0;
+  currentSound.play().catch(() => {});
+}
+
+function updateDisplay() {
+  resultEl.textContent = currentNumber;
+  expressionEl.textContent = expression;
+}
+
+function addNumber(number) {
+  if (waitingForNumber || currentNumber === "Error") {
+    currentNumber = "";
+    waitingForNumber = false;
+  }
+  if (currentNumber === "0") currentNumber = "";
+  currentNumber += number;
+  updateDisplay();
+}
+
+function addDecimal() {
+  if (waitingForNumber || currentNumber === "Error") {
+    currentNumber = "0";
+    waitingForNumber = false;
+  }
+  if (!currentNumber.includes(".")) currentNumber += ".";
+  updateDisplay();
+}
+
+function addOperator(operator) {
+  if (currentNumber === "Error") return;
+  expression += `${currentNumber} ${operator} `;
+  waitingForNumber = true;
+  updateDisplay();
+}
+
+function clearCalculator() {
+  currentNumber = "0";
+  expression = "";
+  waitingForNumber = false;
+  updateDisplay();
+}
+
+function toggleSign() {
+  if (currentNumber !== "0" && currentNumber !== "Error") {
+    currentNumber = currentNumber.startsWith("-") ? currentNumber.slice(1) : `-${currentNumber}`;
+  }
+  updateDisplay();
+}
+
+function percent() {
+  if (currentNumber !== "0") currentNumber = `${currentNumber}%`;
+  updateDisplay();
+}
+
+function showPaywall() {
+  if (dodging) return;
+
+  paywallOpened = true;
+  overlay.classList.add("visible");
+  playRandomSound(paywallSounds);
+}
+
+function getCalculatorItems() {
+  return [
+    ...keys.querySelectorAll(":scope > .key"),
+    ...keys.querySelectorAll(":scope > .equals-slot")
+  ];
+}
+
+function swapEquals() {
+  if (!dodging || swapCooldown) return;
+
+  swapCooldown = true;
+
+  const equalsSlot = equalsButton.parentElement;
+  const items = getCalculatorItems().filter(item => item !== equalsSlot);
+  const randomItem = items[Math.floor(Math.random() * items.length)];
+
+  if (!randomItem) {
+    swapCooldown = false;
+    return;
+  }
+
+  const placeholder = document.createElement("div");
+  randomItem.parentNode.insertBefore(placeholder, randomItem);
+  equalsSlot.parentNode.insertBefore(randomItem, equalsSlot);
+  placeholder.parentNode.insertBefore(equalsSlot, placeholder);
+  placeholder.remove();
+
+  equalsButton.classList.add("swapping");
+  playRandomSound(switchSounds);
+  setTimeout(() => {
+    equalsButton.classList.remove("swapping");
+    swapCooldown = false;
+  }, 180);
+}
+
+function startDodging() {
+  overlay.classList.remove("visible");
+  dodging = true;
+  equalsButton.classList.add("runaway");
+}
+
+equalsButton.addEventListener("pointerenter", () => {
+  if (dodging) swapEquals();
+});
+
+document.addEventListener("pointermove", event => {
+  if (!dodging) return;
+  const rect = equalsButton.getBoundingClientRect();
+  const distance = Math.hypot(
+    event.clientX - (rect.left + rect.width / 2),
+    event.clientY - (rect.top + rect.height / 2)
+  );
+  if (distance < 100) swapEquals();
+});
+
+equalsButton.addEventListener("click", () => {
+  if (dodging) {
+    swapEquals();
+    return;
+  }
+  showPaywall();
+});
+
+payButton.addEventListener("click", () => {
+  const youtubeUrl = "https://www.youtube.com/watch?v=QDia3e12czc";
+
+  payButton.textContent = "💸 PAYMENT PROCESSING...";
+  window.open(youtubeUrl, "_blank");
+
+  setTimeout(() => {
+    payButton.textContent = "💰 Pay ₹500";
+  }, 900);
+});
+
+laterButton.addEventListener("click", () => {
+  startDodging();
+});
+
+overlay.addEventListener("click", event => {
+  if (event.target === overlay) startDodging();
+});
+
+document.querySelectorAll("[data-number]").forEach(button => button.addEventListener("click", () => addNumber(button.dataset.number)));
+document.querySelectorAll("[data-op]").forEach(button => button.addEventListener("click", () => addOperator(button.dataset.op)));
+document.querySelector('[data-action="decimal"]').addEventListener("click", addDecimal);
+document.querySelector('[data-action="clear"]').addEventListener("click", clearCalculator);
+document.querySelector('[data-action="sign"]').addEventListener("click", toggleSign);
+document.querySelector('[data-action="percent"]').addEventListener("click", percent);
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Enter" || event.key === "=") {
+    event.preventDefault();
+    if (dodging) {
+      swapEquals();
+      return;
+    }
+    showPaywall();
+  }
+});
+
+updateDisplay();
+</script>
+</body>
+</html>
