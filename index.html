@@ -328,9 +328,10 @@ const switchSounds = [
   "quack.mp3",
   "slap.mp3"
 ];
+const soundFolder = "sounds/";
 const soundPlayers = new Map(
   [...paywallSounds, ...switchSounds].map(soundFile => {
-    const audio = new Audio(soundFile);
+    const audio = new Audio(`${soundFolder}${soundFile}`);
     audio.preload = "auto";
     return [soundFile, audio];
   })
